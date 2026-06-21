@@ -82,14 +82,14 @@ export const HeroSection = () => {
               href="/category/ai"
               icon={<ArrowRight className="w-5 h-5" />}
             >
-              [ Explore Universe ]
+              [ 软件下载 ]
             </Button>
             <Button
               variant="secondary"
               size="lg"
               href="/pc-build"
             >
-              [ Start Learning ]
+              [ 电脑配置 ]
             </Button>
           </motion.div>
         </div>
