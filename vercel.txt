@@ -1,0 +1,10 @@
+20:50:09.354 Failed to compile.
+20:50:09.355 Type error: 'canvas' is possibly 'null'.
+20:50:09.356   316 |     // Resize
+20:50:09.356   317 |     function syncSize() {
+20:50:09.356 > 318 |       const w = canvas.clientWidth || window.innerWidth
+20:50:09.356       |                 ^
+20:50:09.356   319 |       const h = canvas.clientHeight || window.innerHeight
+20:50:09.356   320 |       if (canvas.width !== w || canvas.height !== h) {
+20:50:09.356   321 |         canvas.width = w
+20:50:09.444 Error: Command "npm run build" exited with 1

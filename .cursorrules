@@ -1,0 +1,222 @@
+# Cursor Rules — 【网站名占位符】导航网站
+
+## 项目概述
+这是一个综合导航聚合网站，技术栈为 Next.js 14 + Tailwind CSS + Supabase + Vercel。
+面向普通用户和技术用户，提供软件下载、GitHub精选、在线工具、AI工具、硬件推荐、系统优化六大分类。
+
+---
+
+## 技术栈
+- **框架**：Next.js 14，使用 App Router
+- **样式**：Tailwind CSS，禁止使用内联style，所有样式通过Tailwind类名实现
+- **数据库**：Supabase（PostgreSQL），使用官方 @supabase/supabase-js 客户端
+- **部署**：Vercel
+- **语言**：TypeScript（所有文件均使用.tsx/.ts）
+- **包管理**：pnpm
+
+---
+
+## 文件夹结构
+```
+src/
+├── app/                        # Next.js App Router页面
+│   ├── page.tsx                # 首页
+│   ├── layout.tsx              # 根布局
+│   ├── globals.css             # 全局样式
+│   ├── category/
+│   │   └── [slug]/
+│   │       └── page.tsx        # 分类页
+│   ├── pc-build/
+│   │   └── page.tsx            # 配置单生成器
+│   ├── submit/
+│   │   └── page.tsx            # 工具投稿
+│   └── contact/
+│       └── page.tsx            # 联系我们
+├── components/                 # 可复用组件
+│   ├── layout/
+│   │   ├── Navbar.tsx
+│   │   └── Footer.tsx
+│   ├── ui/
+│   │   ├── ToolCard.tsx        # 工具卡片
+│   │   ├── SearchBar.tsx       # 搜索框
+│   │   ├── TagBadge.tsx        # 标签胶囊
+│   │   ├── ThemeToggle.tsx     # 暗黑模式切换
+│   │   └── CategoryIcon.tsx    # 分类图标
+│   └── sections/
+│       ├── HeroSection.tsx     # 首页Hero
+│       ├── HotList.tsx         # 今日热榜
+│       └── PcBuildSelector.tsx # 配置单选择器
+├── lib/
+│   ├── supabase.ts             # Supabase客户端初始化
+│   ├── queries.ts              # 数据库查询函数
+│   └── utils.ts                # 工具函数
+├── types/
+│   └── index.ts                # TypeScript类型定义
+└── constants/
+    └── index.ts                # 常量（分类列表、标签列表等）
+```
+
+---
+
+## 代码规范
+
+### 通用规则
+- 所有组件使用函数式组件，禁止使用class组件
+- 使用 TypeScript，所有props必须有类型定义
+- 组件文件名使用大驼峰（PascalCase）：ToolCard.tsx
+- 工具函数文件名使用小驼峰（camelCase）：utils.ts
+- 每个组件文件只导出一个主组件
+- 使用 `const` 声明组件，不使用 `function`
+
+### TypeScript规范
+- 禁止使用 `any` 类型
+- 接口名以 I 开头：IToolCard
+- 类型名以 T 开头：TCategory
+- 所有Supabase查询结果必须有类型声明
+
+### 组件规范
+```tsx
+// 正确示例
+interface IToolCardProps {
+  name: string
+  url: string
+  description: string
+  tags: string[]
+  isFeatured?: boolean
+  isHot?: boolean
+}
+
+const ToolCard = ({ name, url, description, tags, isFeatured, isHot }: IToolCardProps) => {
+  return (
+    // JSX
+  )
+}
+
+export default ToolCard
+```
+
+---
+
+## Tailwind CSS规范
+
+### 暗黑模式
+- 使用 `dark:` 前缀实现暗黑模式
+- 在 tailwind.config.ts 中设置 `darkMode: 'class'`
+- 亮色/暗色颜色必须成对写：`bg-white dark:bg-slate-900`
+
+### 颜色规范
+- 主背景亮色：`bg-white` / `bg-slate-50`
+- 主背景暗色：`bg-slate-900` / `bg-slate-800`
+- 文字亮色：`text-slate-900` / `text-slate-600`
+- 文字暗色：`dark:text-white` / `dark:text-slate-300`
+- 主色调：`blue-600`（按钮、链接、强调）
+- 边框：`border-slate-200 dark:border-slate-700`
+
+### 卡片样式模板
+```
+bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:shadow-md transition-shadow duration-200
+```
+
+### 响应式规范
+- 移动优先：先写手机样式，再用 `md:` `lg:` 覆盖
+- 卡片网格：`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4`
+
+---
+
+## Supabase规范
+
+### 客户端初始化（lib/supabase.ts）
+```typescript
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+```
+
+### 查询规范
+- 所有数据库查询封装在 `lib/queries.ts` 中
+- 服务端组件使用 server component 直接查询
+- 客户端组件使用 useEffect + useState 查询
+- 查询必须处理 error 状态
+
+### 查询示例
+```typescript
+// lib/queries.ts
+export async function getToolsByCategory(category: string) {
+  const { data, error } = await supabase
+    .from('tools')
+    .select('*')
+    .eq('category', category)
+    .eq('is_published', true)
+    .order('sort_order', { ascending: false })
+  
+  if (error) throw error
+  return data
+}
+```
+
+---
+
+## 环境变量
+项目根目录需要 `.env.local` 文件：
+```
+NEXT_PUBLIC_SUPABASE_URL=你的Supabase项目URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY=你的Supabase匿名Key
+```
+禁止将 `.env.local` 提交到git，确保 `.gitignore` 包含此文件。
+
+---
+
+## 分类常量（constants/index.ts）
+```typescript
+export const CATEGORIES = [
+  { slug: 'software', name: '软件下载', icon: '💾', description: '常用软件、安装教程' },
+  { slug: 'github', name: 'GitHub精选', icon: '🐙', description: '优质开源项目推荐' },
+  { slug: 'tools', name: '在线工具', icon: '🔧', description: '图片压缩、格式转换等' },
+  { slug: 'ai', name: 'AI工具', icon: '🤖', description: 'AI写作、绘图、视频等' },
+  { slug: 'hardware', name: '硬件推荐', icon: '🖥️', description: '装机配置、选购指南' },
+  { slug: 'system', name: '系统优化', icon: '⚡', description: 'Windows技巧、驱动教程' },
+]
+
+export const TAGS = [
+  '免费', '免注册', '开源',
+  '小白友好', '开发者', '设计师', '办公',
+  'AI', '写作', '图片', '视频', '文件', '网络', '编程', '系统', '硬件',
+  '编辑推荐', '热门', '新上线'
+]
+
+export const BUDGET_TIERS = [
+  { label: '3000以内', min: 0, max: 3000, desc: '入门办公' },
+  { label: '5000左右', min: 3000, max: 6000, desc: '家用主流' },
+  { label: '8000左右', min: 6000, max: 9000, desc: '高性能' },
+  { label: '10000以上', min: 9000, max: 99999, desc: '旗舰发烧' },
+]
+```
+
+---
+
+## SEO规范
+- 每个页面必须导出 `metadata` 对象
+- 格式：`{ title: '页面标题 - 【网站名】', description: '页面描述' }`
+- 图片必须有 `alt` 属性
+- 使用语义化标签：`<main>` `<nav>` `<section>` `<article>` `<header>` `<footer>`
+
+---
+
+## 性能规范
+- 图片使用 Next.js `<Image>` 组件，禁止直接用 `<img>`
+- 列表页使用分页或虚拟滚动，禁止一次加载全部数据
+- 能用 Server Component 的地方优先用 Server Component
+- 第三方favicon图片加载失败时显示默认占位图标
+
+---
+
+## 禁止事项
+- 禁止使用内联style：❌ `style={{ color: 'red' }}`
+- 禁止硬编码颜色值，统一用Tailwind类名
+- 禁止在组件内直接写Supabase查询，统一封装在queries.ts
+- 禁止使用 `any` 类型
+- 禁止提交 `.env.local` 到git
+- 禁止在客户端暴露Supabase Service Key

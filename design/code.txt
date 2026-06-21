@@ -1,0 +1,1876 @@
+<!-- Design System -->
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+    }
+  </style>
+</head>
+<body>
+<!-- STITCH_SHADER_START:ANIMATION_3 class="fixed inset-0 w-full h-full" -->
+<div class="fixed inset-0 w-full h-full" style="display:block;">
+<canvas id="shader-canvas-ANIMATION_3" style="display:block;width:100%;height:100%"></canvas>
+<script>
+(function() {
+  const canvas = document.getElementById('shader-canvas-ANIMATION_3');
+
+  // Sync the WebGL drawing-buffer size with the CSS-driven layout size.
+  // This fires on initial layout and whenever the element is resized.
+  function syncSize() {
+    const w = canvas.clientWidth  || 1280;
+    const h = canvas.clientHeight || 720;
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width  = w;
+      canvas.height = h;
+    }
+  }
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(syncSize).observe(canvas);
+  }
+  syncSize();
+
+  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  if (!gl) return;
+  const vs = `attribute vec2 a_position;
+varying vec2 v_texCoord;
+void main() {
+  v_texCoord = a_position * 0.5 + 0.5;
+  gl_Position = vec4(a_position, 0.0, 1.0);
+}`;
+  const fs = `precision highp float;
+uniform float u_time;
+uniform vec2 u_resolution;
+uniform vec2 u_mouse;
+varying vec2 v_texCoord;
+
+void main() {
+    vec2 uv = v_texCoord;
+    vec2 mouse = u_mouse / u_resolution;
+    
+    // Create moving aurora-like gradients
+    float t = u_time * 0.2;
+    
+    vec3 color1 = vec3(0.05, 0.1, 0.2); // Deep blue
+    vec3 color2 = vec3(0.4, 0.0, 0.8); // Electric purple
+    vec3 color3 = vec3(0.0, 0.8, 0.8); // Cyan
+    
+    float n1 = sin(uv.x * 2.0 + t) * sin(uv.y * 3.0 - t);
+    float n2 = cos(uv.y * 2.0 + t * 0.5) * sin(uv.x * 4.0 + t);
+    
+    vec3 color = mix(color1, color2, n1 * 0.5 + 0.5);
+    color = mix(color, color3, n2 * 0.3);
+    
+    // Add mouse-follow spotlight
+    float dist = distance(uv, mouse);
+    float spotlight = smoothstep(0.4, 0.0, dist);
+    color += spotlight * 0.15;
+    
+    // Darken edges
+    float vignette = 1.0 - smoothstep(0.5, 1.5, length(uv - 0.5));
+    color *= vignette;
+    
+    // Deep black base for that premium feel
+    color = mix(vec3(0.01, 0.01, 0.02), color, 0.6);
+    
+    gl_FragColor = vec4(color, 1.0);
+}`;
+  function cs(type, src) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    return s;
+  }
+  const prog = gl.createProgram();
+  gl.attachShader(prog, cs(gl.VERTEX_SHADER, vs));
+  gl.attachShader(prog, cs(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+  const pos = gl.getAttribLocation(prog, 'a_position');
+  gl.enableVertexAttribArray(pos);
+  gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
+  const uTime = gl.getUniformLocation(prog, 'u_time');
+  const uRes = gl.getUniformLocation(prog, 'u_resolution');
+  const uMouse = gl.getUniformLocation(prog, 'u_mouse');
+
+  // u_mouse is in pixel coordinates matching u_resolution (ShaderToy convention).
+  // Shaders that need normalized coords should use: u_mouse / u_resolution.
+  let mouse = { x: canvas.width / 2, y: canvas.height / 2 };
+  window.addEventListener('mousemove', (event) => {
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width && rect.height) {
+      const nx = (event.clientX - rect.left) / rect.width;
+      const ny = 1.0 - (event.clientY - rect.top) / rect.height;
+      mouse.x = nx * canvas.width;
+      mouse.y = ny * canvas.height;
+    }
+  });
+
+  function render(t) {
+    if (typeof ResizeObserver === 'undefined') syncSize();
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    if (uTime) gl.uniform1f(uTime, t * 0.001);
+    if (uRes) gl.uniform2f(uRes, canvas.width, canvas.height);
+    if (uMouse) gl.uniform2f(uMouse, mouse.x, mouse.y);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    requestAnimationFrame(render);
+  }
+  render(0);
+})();
+</script>
+</div>
+<!-- STITCH_SHADER_END:ANIMATION_3 -->
+</body>
+</html>
+
+
+<!-- Shader -->
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+    }
+  </style>
+</head>
+<body>
+<!-- STITCH_THREEJS_START:ANIMATION_4 class="fixed inset-0 w-full h-full bg-transparent" -->
+<div class="fixed inset-0 w-full h-full bg-transparent" style="display:block;">
+<script src="https://ajax.googleapis.com/ajax/libs/threejs/r125/three.min.js"></script>
+<div id="threejs-container-ANIMATION_4" style="width:100%;height:100%"></div>
+<script>
+(function() {
+  const container = document.getElementById('threejs-container-ANIMATION_4');
+  const devicePixelRatio = window.devicePixelRatio || 1;
+  const width = container.clientWidth || window.innerWidth;
+const height = container.clientHeight || window.innerHeight;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+
+renderer.setSize(width, height);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+container.appendChild(renderer.domElement);
+
+// Particle System
+const particlesCount = 1500;
+const positions = new Float32Array(particlesCount * 3);
+const velocities = new Float32Array(particlesCount);
+
+for (let i = 0; i < particlesCount * 3; i++) {
+    positions[i] = (Math.random() - 0.5) * 10;
+}
+
+const geometry = new THREE.BufferGeometry();
+geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+const material = new THREE.PointsMaterial({
+    size: 0.015,
+    color: 0x00ffff,
+    transparent: true,
+    opacity: 0.6,
+    blending: THREE.AdditiveBlending
+});
+
+const points = new THREE.Points(geometry, material);
+scene.add(points);
+
+camera.position.z = 3;
+
+// Mouse Interaction
+let mouseX = 0;
+let mouseY = 0;
+
+window.addEventListener('mousemove', (event) => {
+    mouseX = (event.clientX / window.innerWidth - 0.5) * 0.5;
+    mouseY = (event.clientY / window.innerHeight - 0.5) * 0.5;
+});
+
+function animate() {
+    requestAnimationFrame(animate);
+    
+    points.rotation.y += 0.001;
+    points.rotation.x += 0.0005;
+    
+    // Subtle parallax shift
+    points.position.x += (mouseX - points.position.x) * 0.05;
+    points.position.y += (-mouseY - points.position.y) * 0.05;
+    
+    renderer.render(scene, camera);
+}
+
+window.addEventListener('resize', () => {
+    const w = container.clientWidth || window.innerWidth;
+    const h = container.clientHeight || window.innerHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+});
+
+animate();
+})();
+</script>
+</div>
+<!-- STITCH_THREEJS_END:ANIMATION_4 -->
+</body>
+</html>
+
+
+<!-- Three.js -->
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TechVerse - The Next-Gen Digital Tool Universe</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;family=Geist+Mono:wght@100..900&amp;family=Inter:wght@100..900&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-lowest": "#0b0f10",
+                        "on-secondary-fixed-variant": "#6900b3",
+                        "surface-container-low": "#191c1e",
+                        "surface-bright": "#363a3b",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-container": "#000000",
+                        "surface": "#101415",
+                        "on-tertiary-container": "#008197",
+                        "on-surface-variant": "#cfc4c5",
+                        "primary-fixed-dim": "#c6c6c6",
+                        "on-surface": "#e0e3e5",
+                        "surface-variant": "#323537",
+                        "outline-variant": "#4c4546",
+                        "on-secondary-container": "#d6a9ff",
+                        "surface-dim": "#101415",
+                        "tertiary-fixed-dim": "#4cd7f6",
+                        "primary-fixed": "#e2e2e2",
+                        "on-primary-container": "#757575",
+                        "secondary-container": "#6f00be",
+                        "surface-container": "#1d2022",
+                        "secondary": "#ddb7ff",
+                        "on-primary-fixed-variant": "#474747",
+                        "tertiary": "#4cd7f6",
+                        "surface-container-highest": "#323537",
+                        "inverse-on-surface": "#2d3133",
+                        "on-tertiary-fixed": "#001f26",
+                        "background": "#101415",
+                        "on-error": "#690005",
+                        "on-secondary-fixed": "#2c0051",
+                        "on-tertiary-fixed-variant": "#004e5c",
+                        "on-primary": "#303030",
+                        "surface-tint": "#c6c6c6",
+                        "outline": "#988e90",
+                        "inverse-primary": "#5e5e5e",
+                        "on-tertiary": "#003640",
+                        "secondary-fixed": "#f0dbff",
+                        "primary": "#c6c6c6",
+                        "secondary-fixed-dim": "#ddb7ff",
+                        "on-secondary": "#490080",
+                        "primary-container": "#000000",
+                        "inverse-surface": "#e0e3e5",
+                        "on-primary-fixed": "#1b1b1b",
+                        "on-background": "#e0e3e5",
+                        "error": "#ffb4ab",
+                        "tertiary-fixed": "#acedff",
+                        "surface-container-high": "#272a2c",
+                        "error-container": "#93000a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-mobile": "20px",
+                        "gutter-md": "24px",
+                        "margin-desktop": "64px",
+                        "unit": "4px",
+                        "max-width": "1440px",
+                        "gutter-sm": "16px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Geist"],
+                        "mono-code": ["Geist Mono"],
+                        "display-mobile": ["Geist"],
+                        "display-xl": ["Geist"],
+                        "body-md": ["Inter"],
+                        "label-sm": ["Geist"],
+                        "headline-md": ["Geist"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.03em", "fontWeight": "700" }],
+                        "mono-code": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-mobile": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "display-xl": ["72px", { "lineHeight": "80px", "letterSpacing": "-0.04em", "fontWeight": "800" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "label-sm": ["13px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "letterSpacing": "0em", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        /* Glassmorphism Utilities */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .glass-panel-interactive:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .text-gradient {
+            background: linear-gradient(to right, #e0e3e5, #4cd7f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Micro-interactions */
+        .raycast-focus:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 2px #4cd7f6;
+        }
+        
+        /* Hide scrollbar for clean horizontal scrolls */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body-md overflow-x-hidden selection:bg-tertiary selection:text-on-tertiary">
+<!-- TopNavBar Shared Component -->
+<header class="bg-surface/30 dark:bg-surface/30 backdrop-blur-xl fixed top-0 w-full z-50 border-b border-white/10 flat no shadows">
+<div class="flex justify-between items-center px-margin-mobile md:px-margin-desktop py-4 max-w-max-width mx-auto">
+<!-- Brand -->
+<a class="font-display-lg text-display-lg-mobile md:text-display-lg tracking-tighter text-on-surface hover:opacity-80 transition-opacity" href="#">TechVerse</a>
+<!-- Navigation Links (Desktop) -->
+<nav class="hidden md:flex gap-8 items-center">
+<a class="text-on-surface-variant font-medium hover:text-on-surface transition-colors duration-300 active:scale-95 transition-transform" href="#">Discover</a>
+<a class="text-on-surface-variant font-medium hover:text-on-surface transition-colors duration-300 active:scale-95 transition-transform" href="#">Universe</a>
+<a class="text-on-surface-variant font-medium hover:text-on-surface transition-colors duration-300 active:scale-95 transition-transform" href="#">Creators</a>
+<a class="text-on-surface-variant font-medium hover:text-on-surface transition-colors duration-300 active:scale-95 transition-transform" href="#">Market</a>
+</nav>
+<!-- Actions -->
+<div class="flex items-center gap-4">
+<button aria-label="Notifications" class="text-on-surface hover:text-primary transition-colors flex items-center justify-center p-2 rounded-full hover:bg-white/5">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="hidden md:flex bg-white/5 border border-white/10 text-on-surface px-6 py-2 rounded-full font-label-sm hover:bg-white/10 hover:border-white/20 transition-all raycast-focus">
+                    Get Started
+                </button>
+<!-- Mobile Menu Toggle -->
+<button aria-label="Menu" class="md:hidden text-on-surface p-2">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-grow flex flex-col">
+<!-- Hero Section -->
+<section class="relative min-h-screen flex items-center justify-center overflow-hidden pt-24 pb-16 px-margin-mobile md:px-margin-desktop">
+<!-- Background Shaders -->
+<div class="absolute inset-0 z-0">
+<!-- STITCH_SHADER_START:ANIMATION_3 class="absolute inset-0 w-full h-full opacity-60" -->
+<div class="absolute inset-0 w-full h-full opacity-60" style="display:block;">
+<canvas id="shader-canvas-ANIMATION_3" style="display:block;width:100%;height:100%"></canvas>
+<script>
+(function() {
+  const canvas = document.getElementById('shader-canvas-ANIMATION_3');
+
+  // Sync the WebGL drawing-buffer size with the CSS-driven layout size.
+  // This fires on initial layout and whenever the element is resized.
+  function syncSize() {
+    const w = canvas.clientWidth  || 1280;
+    const h = canvas.clientHeight || 720;
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width  = w;
+      canvas.height = h;
+    }
+  }
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(syncSize).observe(canvas);
+  }
+  syncSize();
+
+  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  if (!gl) return;
+  const vs = `attribute vec2 a_position;
+varying vec2 v_texCoord;
+void main() {
+  v_texCoord = a_position * 0.5 + 0.5;
+  gl_Position = vec4(a_position, 0.0, 1.0);
+}`;
+  const fs = `precision highp float;
+uniform float u_time;
+uniform vec2 u_resolution;
+uniform vec2 u_mouse;
+varying vec2 v_texCoord;
+
+void main() {
+    vec2 uv = v_texCoord;
+    vec2 mouse = u_mouse / u_resolution;
+    
+    // Create moving aurora-like gradients
+    float t = u_time * 0.2;
+    
+    vec3 color1 = vec3(0.05, 0.1, 0.2); // Deep blue
+    vec3 color2 = vec3(0.4, 0.0, 0.8); // Electric purple
+    vec3 color3 = vec3(0.0, 0.8, 0.8); // Cyan
+    
+    float n1 = sin(uv.x * 2.0 + t) * sin(uv.y * 3.0 - t);
+    float n2 = cos(uv.y * 2.0 + t * 0.5) * sin(uv.x * 4.0 + t);
+    
+    vec3 color = mix(color1, color2, n1 * 0.5 + 0.5);
+    color = mix(color, color3, n2 * 0.3);
+    
+    // Add mouse-follow spotlight
+    float dist = distance(uv, mouse);
+    float spotlight = smoothstep(0.4, 0.0, dist);
+    color += spotlight * 0.15;
+    
+    // Darken edges
+    float vignette = 1.0 - smoothstep(0.5, 1.5, length(uv - 0.5));
+    color *= vignette;
+    
+    // Deep black base for that premium feel
+    color = mix(vec3(0.01, 0.01, 0.02), color, 0.6);
+    
+    gl_FragColor = vec4(color, 1.0);
+}`;
+  function cs(type, src) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    return s;
+  }
+  const prog = gl.createProgram();
+  gl.attachShader(prog, cs(gl.VERTEX_SHADER, vs));
+  gl.attachShader(prog, cs(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+  const pos = gl.getAttribLocation(prog, 'a_position');
+  gl.enableVertexAttribArray(pos);
+  gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
+  const uTime = gl.getUniformLocation(prog, 'u_time');
+  const uRes = gl.getUniformLocation(prog, 'u_resolution');
+  const uMouse = gl.getUniformLocation(prog, 'u_mouse');
+
+  // u_mouse is in pixel coordinates matching u_resolution (ShaderToy convention).
+  // Shaders that need normalized coords should use: u_mouse / u_resolution.
+  let mouse = { x: canvas.width / 2, y: canvas.height / 2 };
+  window.addEventListener('mousemove', (event) => {
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width && rect.height) {
+      const nx = (event.clientX - rect.left) / rect.width;
+      const ny = 1.0 - (event.clientY - rect.top) / rect.height;
+      mouse.x = nx * canvas.width;
+      mouse.y = ny * canvas.height;
+    }
+  });
+
+  function render(t) {
+    if (typeof ResizeObserver === 'undefined') syncSize();
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    if (uTime) gl.uniform1f(uTime, t * 0.001);
+    if (uRes) gl.uniform2f(uRes, canvas.width, canvas.height);
+    if (uMouse) gl.uniform2f(uMouse, mouse.x, mouse.y);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    requestAnimationFrame(render);
+  }
+  render(0);
+})();
+</script>
+</div>
+<!-- STITCH_SHADER_END:ANIMATION_3 -->
+</div>
+<!-- Foreground Particle Scene -->
+<div class="absolute inset-0 z-10 pointer-events-none flex items-center justify-center mix-blend-screen opacity-80">
+<!-- STITCH_THREEJS_START:ANIMATION_4 class="absolute inset-0 w-full h-full" -->
+<div class="absolute inset-0 w-full h-full" style="display:block;">
+<script src="https://ajax.googleapis.com/ajax/libs/threejs/r125/three.min.js"></script>
+<div id="threejs-container-ANIMATION_4" style="width:100%;height:100%"></div>
+<script>
+(function() {
+  const container = document.getElementById('threejs-container-ANIMATION_4');
+  const devicePixelRatio = window.devicePixelRatio || 1;
+  const width = container.clientWidth || window.innerWidth;
+const height = container.clientHeight || window.innerHeight;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+
+renderer.setSize(width, height);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+container.appendChild(renderer.domElement);
+
+// Particle System
+const particlesCount = 1500;
+const positions = new Float32Array(particlesCount * 3);
+const velocities = new Float32Array(particlesCount);
+
+for (let i = 0; i < particlesCount * 3; i++) {
+    positions[i] = (Math.random() - 0.5) * 10;
+}
+
+const geometry = new THREE.BufferGeometry();
+geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+const material = new THREE.PointsMaterial({
+    size: 0.015,
+    color: 0x00ffff,
+    transparent: true,
+    opacity: 0.6,
+    blending: THREE.AdditiveBlending
+});
+
+const points = new THREE.Points(geometry, material);
+scene.add(points);
+
+camera.position.z = 3;
+
+// Mouse Interaction
+let mouseX = 0;
+let mouseY = 0;
+
+window.addEventListener('mousemove', (event) => {
+    mouseX = (event.clientX / window.innerWidth - 0.5) * 0.5;
+    mouseY = (event.clientY / window.innerHeight - 0.5) * 0.5;
+});
+
+function animate() {
+    requestAnimationFrame(animate);
+    
+    points.rotation.y += 0.001;
+    points.rotation.x += 0.0005;
+    
+    // Subtle parallax shift
+    points.position.x += (mouseX - points.position.x) * 0.05;
+    points.position.y += (-mouseY - points.position.y) * 0.05;
+    
+    renderer.render(scene, camera);
+}
+
+window.addEventListener('resize', () => {
+    const w = container.clientWidth || window.innerWidth;
+    const h = container.clientHeight || window.innerHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+});
+
+animate();
+})();
+</script>
+</div>
+<!-- STITCH_THREEJS_END:ANIMATION_4 -->
+</div>
+<!-- Content Canvas -->
+<div class="relative z-20 flex flex-col items-center text-center max-w-4xl mx-auto space-y-8 glass-panel p-8 md:p-12 rounded-xl border border-white/10 shadow-[0_0_100px_rgba(76,215,246,0.1)]">
+<h2 class="font-mono-code text-mono-code text-tertiary tracking-widest uppercase opacity-80">年轻人的数字工具宇宙</h2>
+<h1 class="font-display-xl text-display-mobile md:text-display-xl tracking-tighter font-extrabold text-transparent bg-clip-text bg-gradient-to-b from-white to-white/40">
+                    TECHVERSE
+                </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto font-light leading-relaxed">
+                    Discover the best AI tools, Github projects, hardware knowledge and digital resources in one powerful ecosystem. Engineered for the next generation of creators.
+                </p>
+<div class="flex flex-col sm:flex-row gap-4 mt-8 w-full sm:w-auto justify-center">
+<button class="group relative px-8 py-4 rounded-full bg-transparent border border-white text-white font-label-sm overflow-hidden hover:border-tertiary transition-colors duration-300 raycast-focus">
+<div class="absolute inset-0 bg-gradient-to-r from-tertiary/10 to-secondary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+<span class="relative flex items-center gap-2">
+                            [ Explore Universe ]
+                            <span class="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</span>
+</button>
+<button class="px-8 py-4 rounded-full bg-white/5 border border-white/10 text-on-surface-variant hover:text-white hover:bg-white/10 font-label-sm transition-all duration-300 raycast-focus backdrop-blur-md">
+                        [ Start Learning ]
+                    </button>
+</div>
+</div>
+<!-- Scroll Indicator -->
+<div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 animate-bounce opacity-50">
+<span class="material-symbols-outlined text-white">keyboard_arrow_down</span>
+</div>
+</section>
+<!-- Explore Universe Section (Bento Grid) -->
+<section class="py-24 px-margin-mobile md:px-margin-desktop max-w-max-width mx-auto w-full relative z-20">
+<div class="flex flex-col mb-12">
+<h2 class="font-display-lg text-display-mobile md:text-display-lg text-on-surface font-bold tracking-tight">Explore Universe</h2>
+<div class="h-1 w-24 bg-gradient-to-r from-tertiary to-transparent mt-4 rounded-full"></div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-[240px]">
+<!-- Card 1: AI Tools (Large) -->
+<a class="glass-panel glass-panel-interactive rounded-xl p-6 flex flex-col justify-between group col-span-1 md:col-span-2 row-span-2 relative overflow-hidden" href="#">
+<div class="absolute top-0 right-0 w-64 h-64 bg-secondary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-secondary/20 transition-colors duration-500"></div>
+<div class="relative z-10 flex items-center gap-3 mb-4">
+<div class="w-12 h-12 rounded-lg bg-white/5 flex items-center justify-center border border-white/10">
+<span class="text-2xl">🤖</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-white font-semibold">AI Tools</h3>
+</div>
+<div class="relative z-10 mt-auto">
+<p class="font-body-md text-body-md text-on-surface-variant mb-4 max-w-sm">Access the latest generative models, prompt engineering platforms, and workflow automation bots.</p>
+<span class="font-mono-code text-mono-code text-tertiary flex items-center gap-1 group-hover:gap-2 transition-all">Launch Console <span class="material-symbols-outlined text-[14px]">arrow_right_alt</span></span>
+</div>
+</a>
+<!-- Card 2: Github Projects -->
+<a class="glass-panel glass-panel-interactive rounded-xl p-6 flex flex-col justify-between group relative overflow-hidden" href="#">
+<div class="relative z-10">
+<div class="flex items-center gap-3 mb-2">
+<span class="text-xl">🚀</span>
+<h3 class="font-label-sm text-label-sm text-white font-medium uppercase tracking-wider">Github Projects</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant text-sm mt-2">Curated open-source repos.</p>
+</div>
+<div class="relative z-10 self-end mt-auto opacity-50 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">code</span>
+</div>
+</a>
+<!-- Card 3: Cursor Skills -->
+<a class="glass-panel glass-panel-interactive rounded-xl p-6 flex flex-col justify-between group relative overflow-hidden" href="#">
+<div class="relative z-10">
+<div class="flex items-center gap-3 mb-2">
+<span class="text-xl">🧠</span>
+<h3 class="font-label-sm text-label-sm text-white font-medium uppercase tracking-wider">Cursor Skills</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant text-sm mt-2">Master AI-assisted coding.</p>
+</div>
+<div class="relative z-10 self-end mt-auto opacity-50 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">terminal</span>
+</div>
+</a>
+<!-- Card 4: Hardware Center (Wide) -->
+<a class="glass-panel glass-panel-interactive rounded-xl p-6 flex flex-col justify-between group col-span-1 md:col-span-2 relative overflow-hidden" href="#">
+<div class="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.02)_50%,transparent_75%)] bg-[length:250%_250%,100%_100%] bg-[position:-100%_0,0_0] bg-no-repeat group-hover:animate-[shimmer_2s_infinite] transition-all"></div>
+<div class="relative z-10 flex items-center gap-3 mb-4">
+<span class="text-2xl">🖥</span>
+<h3 class="font-headline-md text-headline-md text-white font-semibold">Hardware Center</h3>
+</div>
+<div class="relative z-10 flex justify-between items-end mt-auto">
+<p class="font-body-md text-body-md text-on-surface-variant text-sm max-w-xs">Deep dives into GPUs, custom builds, and next-gen silicon.</p>
+<span class="material-symbols-outlined text-tertiary">memory</span>
+</div>
+</a>
+<!-- Card 5: MCP Servers -->
+<a class="glass-panel glass-panel-interactive rounded-xl p-6 flex flex-col justify-between group relative overflow-hidden" href="#">
+<div class="relative z-10">
+<div class="flex items-center gap-3 mb-2">
+<span class="text-xl">🔌</span>
+<h3 class="font-label-sm text-label-sm text-white font-medium uppercase tracking-wider">MCP Servers</h3>
+</div>
+</div>
+<div class="relative z-10 self-end mt-auto opacity-50 group-hover:opacity-100 transition-opacity text-tertiary">
+<span class="material-symbols-outlined">dns</span>
+</div>
+</a>
+<!-- Card 6: AI Agents -->
+<a class="glass-panel glass-panel-interactive rounded-xl p-6 flex flex-col justify-between group relative overflow-hidden" href="#">
+<div class="relative z-10">
+<div class="flex items-center gap-3 mb-2">
+<span class="text-xl">🤖</span>
+<h3 class="font-label-sm text-label-sm text-white font-medium uppercase tracking-wider">AI Agents</h3>
+</div>
+</div>
+<div class="relative z-10 self-end mt-auto opacity-50 group-hover:opacity-100 transition-opacity text-secondary">
+<span class="material-symbols-outlined">smart_toy</span>
+</div>
+</a>
+<!-- Card 7: Software Library -->
+<a class="glass-panel glass-panel-interactive rounded-xl p-6 flex flex-col justify-between group relative overflow-hidden" href="#">
+<div class="relative z-10">
+<div class="flex items-center gap-3 mb-2">
+<span class="text-xl">💻</span>
+<h3 class="font-label-sm text-label-sm text-white font-medium uppercase tracking-wider">Software Library</h3>
+</div>
+</div>
+<div class="relative z-10 self-end mt-auto opacity-50 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">apps</span>
+</div>
+</a>
+<!-- Card 8: Learning Hub -->
+<a class="glass-panel glass-panel-interactive rounded-xl p-6 flex flex-col justify-between group relative overflow-hidden" href="#">
+<div class="relative z-10">
+<div class="flex items-center gap-3 mb-2">
+<span class="text-xl">📚</span>
+<h3 class="font-label-sm text-label-sm text-white font-medium uppercase tracking-wider">Learning Hub</h3>
+</div>
+</div>
+<div class="relative z-10 self-end mt-auto opacity-50 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">school</span>
+</div>
+</a>
+</div>
+</section>
+<!-- Trending Today Section -->
+<section class="py-24 px-margin-mobile md:px-margin-desktop max-w-max-width mx-auto w-full relative z-20 border-t border-white/5">
+<div class="flex flex-col mb-12">
+<h2 class="font-display-lg text-display-mobile md:text-display-lg text-on-surface font-bold tracking-tight flex items-center gap-4">
+                    🔥 Trending Today
+                </h2>
+</div>
+<!-- Horizontal Scroll Container for Dashboard Cards -->
+<div class="flex overflow-x-auto gap-6 pb-8 no-scrollbar snap-x snap-mandatory">
+<!-- Trending Card 1 -->
+<div class="min-w-[300px] md:min-w-[400px] glass-panel rounded-xl p-6 flex flex-col gap-4 snap-start border-l-2 border-l-tertiary">
+<div class="flex justify-between items-start">
+<div class="bg-surface-variant px-2 py-1 rounded text-xs font-mono-code text-tertiary">#1 AI Tool</div>
+<span class="material-symbols-outlined text-on-surface-variant text-sm">open_in_new</span>
+</div>
+<div>
+<h4 class="font-headline-md text-headline-md text-white">NeuroCraft v2.0</h4>
+<p class="font-body-md text-body-md text-on-surface-variant text-sm mt-1 line-clamp-2">Next-generation local LLM inference engine with zero setup. Optimized for Apple Silicon and RTX 4090.</p>
+</div>
+<div class="flex gap-2 mt-auto pt-4 border-t border-white/5">
+<span class="px-2 py-1 bg-white/5 rounded-full text-xs font-mono-code text-on-surface-variant">macOS</span>
+<span class="px-2 py-1 bg-white/5 rounded-full text-xs font-mono-code text-on-surface-variant">Windows</span>
+</div>
+</div>
+<!-- Trending Card 2 -->
+<div class="min-w-[300px] md:min-w-[400px] glass-panel rounded-xl p-6 flex flex-col gap-4 snap-start border-l-2 border-l-secondary">
+<div class="flex justify-between items-start">
+<div class="bg-surface-variant px-2 py-1 rounded text-xs font-mono-code text-secondary">#1 Repo</div>
+<span class="material-symbols-outlined text-on-surface-variant text-sm">open_in_new</span>
+</div>
+<div>
+<h4 class="font-headline-md text-headline-md text-white">AgentOS Kernel</h4>
+<p class="font-body-md text-body-md text-on-surface-variant text-sm mt-1 line-clamp-2">A lightweight operating system simulation built entirely for autonomous AI agents to interact with file systems safely.</p>
+</div>
+<div class="flex gap-2 mt-auto pt-4 border-t border-white/5">
+<span class="px-2 py-1 bg-white/5 rounded-full text-xs font-mono-code text-on-surface-variant">Python</span>
+<span class="px-2 py-1 bg-white/5 rounded-full text-xs font-mono-code text-on-surface-variant">Docker</span>
+</div>
+</div>
+<!-- Trending Card 3 -->
+<div class="min-w-[300px] md:min-w-[400px] glass-panel rounded-xl p-6 flex flex-col gap-4 snap-start">
+<div class="flex justify-between items-start">
+<div class="bg-surface-variant px-2 py-1 rounded text-xs font-mono-code text-white">Featured Guide</div>
+<span class="material-symbols-outlined text-on-surface-variant text-sm">open_in_new</span>
+</div>
+<div>
+<h4 class="font-headline-md text-headline-md text-white">Mastering MCP Architectures</h4>
+<p class="font-body-md text-body-md text-on-surface-variant text-sm mt-1 line-clamp-2">A comprehensive 40-minute read on setting up Model Context Protocol servers for enterprise workflows.</p>
+</div>
+<div class="flex gap-2 mt-auto pt-4 border-t border-white/5">
+<span class="px-2 py-1 bg-white/5 rounded-full text-xs font-mono-code text-on-surface-variant">Tutorial</span>
+<span class="px-2 py-1 bg-white/5 rounded-full text-xs font-mono-code text-on-surface-variant">Advanced</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer Shared Component -->
+<footer class="bg-surface dark:bg-surface w-full py-12 border-t border-white/5 flat no shadows">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin-mobile md:px-margin-desktop max-w-max-width mx-auto gap-gutter-sm">
+<!-- Brand & Copyright -->
+<div class="flex flex-col items-center md:items-start gap-2">
+<span class="font-display-mobile text-display-mobile text-on-surface font-bold tracking-tighter">TechVerse</span>
+<span class="font-mono-code text-mono-code text-on-surface-variant text-sm">© 2024 TechVerse Inc. Built for the next generation.</span>
+</div>
+<!-- Links -->
+<nav class="flex gap-6 mt-6 md:mt-0">
+<a class="font-mono-code text-mono-code text-on-surface-variant hover:text-primary transition-colors duration-200 opacity-80 hover:opacity-100 transition-opacity" href="#">Github</a>
+<a class="font-mono-code text-mono-code text-on-surface-variant hover:text-primary transition-colors duration-200 opacity-80 hover:opacity-100 transition-opacity" href="#">Discord</a>
+<a class="font-mono-code text-mono-code text-on-surface-variant hover:text-primary transition-colors duration-200 opacity-80 hover:opacity-100 transition-opacity" href="#">X</a>
+<a class="font-mono-code text-mono-code text-on-surface-variant hover:text-primary transition-colors duration-200 opacity-80 hover:opacity-100 transition-opacity" href="#">Bilibili</a>
+</nav>
+</div>
+</footer>
+<script>
+        // Simple ambient shimmer effect for dynamic cards
+        const styleSheet = document.createElement("style");
+        styleSheet.innerText = `
+            @keyframes shimmer {
+                0% { background-position: 200% 0; }
+                100% { background-position: -200% 0; }
+            }
+        `;
+        document.head.appendChild(styleSheet);
+    </script>
+</body></html>
+
+<!-- TechVerse Home - The Digital Universe -->
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TechVerse Hardware Center</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-lowest": "#0b0f10",
+                      "on-secondary-fixed-variant": "#6900b3",
+                      "surface-container-low": "#191c1e",
+                      "surface-bright": "#363a3b",
+                      "on-error-container": "#ffdad6",
+                      "tertiary-container": "#000000",
+                      "surface": "#101415",
+                      "on-tertiary-container": "#008197",
+                      "on-surface-variant": "#cfc4c5",
+                      "primary-fixed-dim": "#c6c6c6",
+                      "on-surface": "#e0e3e5",
+                      "surface-variant": "#323537",
+                      "outline-variant": "#4c4546",
+                      "on-secondary-container": "#d6a9ff",
+                      "surface-dim": "#101415",
+                      "tertiary-fixed-dim": "#4cd7f6",
+                      "primary-fixed": "#e2e2e2",
+                      "on-primary-container": "#757575",
+                      "secondary-container": "#6f00be",
+                      "surface-container": "#1d2022",
+                      "secondary": "#ddb7ff",
+                      "on-primary-fixed-variant": "#474747",
+                      "tertiary": "#4cd7f6",
+                      "surface-container-highest": "#323537",
+                      "inverse-on-surface": "#2d3133",
+                      "on-tertiary-fixed": "#001f26",
+                      "background": "#101415",
+                      "on-error": "#690005",
+                      "on-secondary-fixed": "#2c0051",
+                      "on-tertiary-fixed-variant": "#004e5c",
+                      "on-primary": "#303030",
+                      "surface-tint": "#c6c6c6",
+                      "outline": "#988e90",
+                      "inverse-primary": "#5e5e5e",
+                      "on-tertiary": "#003640",
+                      "secondary-fixed": "#f0dbff",
+                      "primary": "#c6c6c6",
+                      "secondary-fixed-dim": "#ddb7ff",
+                      "on-secondary": "#490080",
+                      "primary-container": "#000000",
+                      "inverse-surface": "#e0e3e5",
+                      "on-primary-fixed": "#1b1b1b",
+                      "on-background": "#e0e3e5",
+                      "error": "#ffb4ab",
+                      "tertiary-fixed": "#acedff",
+                      "surface-container-high": "#272a2c",
+                      "error-container": "#93000a"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "margin-mobile": "20px",
+                      "gutter-md": "24px",
+                      "margin-desktop": "64px",
+                      "unit": "4px",
+                      "max-width": "1440px",
+                      "gutter-sm": "16px"
+              },
+              "fontFamily": {
+                      "display-lg": [
+                              "Geist"
+                      ],
+                      "mono-code": [
+                              "Geist Mono"
+                      ],
+                      "display-mobile": [
+                              "Geist"
+                      ],
+                      "display-xl": [
+                              "Geist"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Geist"
+                      ],
+                      "headline-md": [
+                              "Geist"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.03em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "mono-code": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-mobile": [
+                              "36px",
+                              {
+                                      "lineHeight": "44px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-xl": [
+                              "72px",
+                              {
+                                      "lineHeight": "80px",
+                                      "letterSpacing": "-0.04em",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "letterSpacing": "0em",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-sm": [
+                              "13px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "28px",
+                                      "letterSpacing": "0em",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&family=Inter:wght@100..900&display=swap');
+        
+        .glass-panel {
+            background-color: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .glass-panel:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        }
+
+        .text-glow-cyan {
+            text-shadow: 0 0 10px rgba(76, 215, 246, 0.5);
+        }
+
+        .text-glow-purple {
+            text-shadow: 0 0 10px rgba(214, 169, 255, 0.5);
+        }
+
+        .border-glow-focus:focus-within {
+            border-color: #4cd7f6;
+            box-shadow: 0 0 0 2px rgba(76, 215, 246, 0.2);
+        }
+        
+        /* Custom Scrollbar for dark theme */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0f10; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #323537; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4c4546; 
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md min-h-screen flex flex-col selection:bg-tertiary/30 selection:text-tertiary">
+<!-- TopNavBar (Shared Component) -->
+<nav class="fixed top-0 w-full z-50 bg-surface/30 dark:bg-surface/30 backdrop-blur-xl border-b border-white/10 flat no shadows flex justify-between items-center px-margin-mobile md:px-margin-desktop py-4 max-w-max-width mx-auto">
+<div class="flex items-center gap-4 md:gap-8">
+<span class="font-display-lg text-display-lg-mobile md:text-display-lg tracking-tighter text-on-surface">TechVerse</span>
+<div class="hidden md:flex gap-6">
+<a class="text-on-surface font-bold border-b-2 border-primary pb-1 hover:text-on-surface transition-colors duration-300 active:scale-95 transition-transform" href="#">Discover</a>
+<a class="text-on-surface-variant font-medium hover:text-on-surface transition-colors duration-300 active:scale-95 transition-transform" href="#">Universe</a>
+<a class="text-on-surface-variant font-medium hover:text-on-surface transition-colors duration-300 active:scale-95 transition-transform" href="#">Creators</a>
+<a class="text-on-surface-variant font-medium hover:text-on-surface transition-colors duration-300 active:scale-95 transition-transform" href="#">Market</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex items-center glass-panel rounded-full px-4 py-1.5 border-glow-focus transition-all">
+<span class="material-symbols-outlined text-on-surface-variant text-sm mr-2" data-icon="search">search</span>
+<input class="bg-transparent border-none text-on-surface font-body-md focus:ring-0 w-48 p-0 placeholder:text-on-surface-variant/50" placeholder="Search hardware..." type="text"/>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors duration-300 active:scale-95 transition-transform">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="bg-transparent text-on-surface border border-white/10 rounded-full px-4 py-1.5 font-label-sm hover:bg-white/10 transition-colors duration-300 active:scale-95 transition-transform">
+                Get Started
+            </button>
+<img alt="User avatar" class="w-8 h-8 rounded-full border border-white/10 object-cover" data-alt="A futuristic, glowing avatar image featuring a highly detailed cybernetic profile. The image is rendered with a dark mode aesthetic, illuminated by intense neon cyan and purple accents against a deep black background. The overall style is high-tech, polished, and sleek, typical of advanced Gen Z digital platforms." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB9swcFOXPN5hyrBpnbISM-DypbcnKiov0ePmYVRDA4lDwhAtBw4wLovJqbmSsT5AtUF8miJ7_00zkHMLUSw353QHlErSjFaA7sBQeZdEtGTc2fu7p3G7s26FSx24Pil3mTloOQPapbAA15KUS08qJ94dNi7tBbBoTk--I9rLtEQ7b1j5cKrkuI9CbSQpdzgYcKKrJQx8XrjX5mFMan-BgJUMKogiprY-yP6QWCWxKEXep7OYWalHhnXEWQFh0aauMioMaQcFcIQG1s"/>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-grow pt-[104px] pb-margin-desktop px-margin-mobile md:px-margin-desktop max-w-max-width mx-auto w-full flex flex-col gap-[80px]">
+<!-- Hero Section -->
+<section class="flex flex-col gap-6 items-center text-center mt-12 mb-8">
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full glass-panel font-label-sm text-tertiary mb-4">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+                Hardware Center Live
+            </div>
+<h1 class="font-display-xl text-display-xl tracking-tighter text-on-surface max-w-4xl">
+                Precision Engineered <br/> <span class="text-glow-cyan text-tertiary">Digital Power</span>
+</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mt-4">
+                Explore the apex of computing performance. From meticulously curated build guides to real-time silicon rankings, designed for creators and enthusiasts.
+            </p>
+</section>
+<!-- Bento Grid: Hardware Rankings & Market -->
+<section class="grid grid-cols-1 md:grid-cols-12 gap-gutter-md">
+<!-- CPU Ranking Panel -->
+<div class="col-span-1 md:col-span-7 glass-panel rounded-xl p-6 flex flex-col gap-6 relative overflow-hidden group">
+<div class="absolute -right-20 -top-20 w-64 h-64 bg-secondary-container/20 rounded-full blur-3xl group-hover:bg-secondary-container/30 transition-all duration-500"></div>
+<div class="flex justify-between items-center z-10">
+<h2 class="font-headline-md text-headline-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary" data-icon="memory">memory</span>
+                        Silicon Hierarchy
+                    </h2>
+<span class="font-label-sm text-on-surface-variant">Top Tier CPUs</span>
+</div>
+<div class="flex flex-col gap-3 z-10">
+<!-- Rank Item -->
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface-container-lowest border border-white/5 hover:border-white/20 transition-all">
+<div class="flex items-center gap-4">
+<span class="font-mono-code text-mono-code text-on-surface-variant w-6">01</span>
+<div class="w-10 h-10 rounded bg-secondary-container/30 border border-secondary/20 flex items-center justify-center">
+<span class="font-label-sm text-secondary">INTEL</span>
+</div>
+<div>
+<h3 class="font-body-md text-body-md font-medium text-on-surface">Core i9-14900K</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant">24 Cores / 32 Threads</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden sm:flex flex-col items-end">
+<span class="font-mono-code text-mono-code text-tertiary">6.0 GHz</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Boost Clock</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="trending_up">trending_up</span>
+</div>
+</div>
+<!-- Rank Item -->
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface-container-lowest border border-white/5 hover:border-white/20 transition-all">
+<div class="flex items-center gap-4">
+<span class="font-mono-code text-mono-code text-on-surface-variant w-6">02</span>
+<div class="w-10 h-10 rounded bg-error-container/30 border border-error/20 flex items-center justify-center">
+<span class="font-label-sm text-error">AMD</span>
+</div>
+<div>
+<h3 class="font-body-md text-body-md font-medium text-on-surface">Ryzen 9 7950X3D</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant">16 Cores / 32 Threads</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden sm:flex flex-col items-end">
+<span class="font-mono-code text-mono-code text-tertiary">5.7 GHz</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Boost Clock</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="trending_flat">trending_flat</span>
+</div>
+</div>
+</div>
+</div>
+<!-- GPU Spotlight -->
+<div class="col-span-1 md:col-span-5 glass-panel rounded-xl p-0 relative overflow-hidden flex flex-col justify-end min-h-[300px] group">
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest via-surface-container-lowest/50 to-transparent z-10"></div>
+<div class="absolute inset-0 bg-cover bg-center opacity-40 group-hover:opacity-60 transition-opacity duration-500 z-0" data-alt="A highly detailed close-up shot of a futuristic graphics card inside a high-end PC build. The intricate cooling fins, massive fans, and exposed PCB are illuminated by deep space blacks and intense neon cyan and purple LED accents. The style is hyper-realistic, sophisticated, and aligns with premium gaming and creator hardware aesthetics." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCs_loHMRAKs7GXTHPH0pn9JGVJbGB0NP_FUh5zWPkoU32CUcjHraVl1o32ZQ7NgT-vEkng4Dxq-W4zvmZrMp0WWjg18Sj2Z3qOFfyQVrivExq2-wCUnFZY1D04z7Wg-R0NoATA-RT65dSjev4KpNEvVQnkcHymyh5h28jh3UdMGqh0wHQ_Xv2P6KWvj98S_q2Ie6_ssDd4jVY8vmqFtCERDBPvY45Rv-1tY9irbfSaHaSmAtvADAC9okp5nCVEt3tNgagRqVWV24D-')"></div>
+<div class="relative z-20 p-6 flex flex-col gap-2">
+<span class="inline-flex px-2 py-1 bg-surface/50 backdrop-blur rounded text-tertiary font-mono-code text-xs uppercase w-fit border border-tertiary/30">GPU Leaderboard</span>
+<h2 class="font-headline-md text-headline-md text-on-surface mt-2">RTX 4090 Vanguard</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4">Unrivaled rendering architecture for elite creators.</p>
+<button class="bg-transparent text-on-surface border border-white/20 rounded-lg px-4 py-2 font-label-sm hover:bg-white/5 transition-colors self-start flex items-center gap-2">
+                        View Full Specs <span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer (Shared Component) -->
+<footer class="bg-surface dark:bg-surface border-t border-white/5 flat no shadows w-full py-12">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin-mobile md:px-margin-desktop max-w-max-width mx-auto gap-gutter-sm">
+<span class="font-display-mobile text-display-mobile text-on-surface">TechVerse</span>
+<div class="flex gap-6">
+<a class="text-on-surface-variant font-mono-code text-mono-code hover:text-primary transition-colors duration-200 opacity-80 hover:opacity-100 transition-opacity" href="#">Github</a>
+<a class="text-on-surface-variant font-mono-code text-mono-code hover:text-primary transition-colors duration-200 opacity-80 hover:opacity-100 transition-opacity" href="#">Discord</a>
+<a class="text-on-surface-variant font-mono-code text-mono-code hover:text-primary transition-colors duration-200 opacity-80 hover:opacity-100 transition-opacity" href="#">X</a>
+<a class="text-on-surface-variant font-mono-code text-mono-code hover:text-primary transition-colors duration-200 opacity-80 hover:opacity-100 transition-opacity" href="#">Bilibili</a>
+</div>
+<p class="font-mono-code text-mono-code text-on-surface-variant">© 2024 TechVerse Inc. Built for the next generation.</p>
+</div>
+</footer>
+</body></html>
+
+<!-- TechVerse Hardware Center -->
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TechVerse Community Discovery</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&amp;family=Geist+Mono:wght@400&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-lowest": "#0b0f10",
+                        "on-secondary-fixed-variant": "#6900b3",
+                        "surface-container-low": "#191c1e",
+                        "surface-bright": "#363a3b",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-container": "#000000",
+                        "surface": "#101415",
+                        "on-tertiary-container": "#008197",
+                        "on-surface-variant": "#cfc4c5",
+                        "primary-fixed-dim": "#c6c6c6",
+                        "on-surface": "#e0e3e5",
+                        "surface-variant": "#323537",
+                        "outline-variant": "#4c4546",
+                        "on-secondary-container": "#d6a9ff",
+                        "surface-dim": "#101415",
+                        "tertiary-fixed-dim": "#4cd7f6",
+                        "primary-fixed": "#e2e2e2",
+                        "on-primary-container": "#757575",
+                        "secondary-container": "#6f00be",
+                        "surface-container": "#1d2022",
+                        "secondary": "#ddb7ff",
+                        "on-primary-fixed-variant": "#474747",
+                        "tertiary": "#4cd7f6",
+                        "surface-container-highest": "#323537",
+                        "inverse-on-surface": "#2d3133",
+                        "on-tertiary-fixed": "#001f26",
+                        "background": "#101415",
+                        "on-error": "#690005",
+                        "on-secondary-fixed": "#2c0051",
+                        "on-tertiary-fixed-variant": "#004e5c",
+                        "on-primary": "#303030",
+                        "surface-tint": "#c6c6c6",
+                        "outline": "#988e90",
+                        "inverse-primary": "#5e5e5e",
+                        "on-tertiary": "#003640",
+                        "secondary-fixed": "#f0dbff",
+                        "primary": "#c6c6c6",
+                        "secondary-fixed-dim": "#ddb7ff",
+                        "on-secondary": "#490080",
+                        "primary-container": "#000000",
+                        "inverse-surface": "#e0e3e5",
+                        "on-primary-fixed": "#1b1b1b",
+                        "on-background": "#e0e3e5",
+                        "error": "#ffb4ab",
+                        "tertiary-fixed": "#acedff",
+                        "surface-container-high": "#272a2c",
+                        "error-container": "#93000a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-mobile": "20px",
+                        "gutter-md": "24px",
+                        "margin-desktop": "64px",
+                        "unit": "4px",
+                        "max-width": "1440px",
+                        "gutter-sm": "16px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Geist"],
+                        "mono-code": ["Geist Mono"],
+                        "display-mobile": ["Geist"],
+                        "display-xl": ["Geist"],
+                        "body-md": ["Inter"],
+                        "label-sm": ["Geist"],
+                        "headline-md": ["Geist"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.03em", "fontWeight": "700" }],
+                        "mono-code": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-mobile": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "display-xl": ["72px", { "lineHeight": "80px", "letterSpacing": "-0.04em", "fontWeight": "800" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "label-sm": ["13px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "letterSpacing": "0em", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background-color: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .glass-panel:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-primary {
+            background-color: transparent;
+            border: 1px solid rgba(255, 255, 255, 1);
+            color: #ffffff;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, rgba(76, 215, 246, 0.1) 0%, rgba(111, 0, 190, 0.1) 100%);
+            box-shadow: 0 0 15px rgba(76, 215, 246, 0.2);
+        }
+
+        .btn-ghost {
+            color: #94a3b8; /* slate-400 equivalent */
+            transition: all 0.3s ease;
+        }
+
+        .btn-ghost:hover {
+            color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.04);
+        }
+
+        .chip-tech {
+            background-color: rgba(76, 215, 246, 0.1);
+            color: #4cd7f6;
+        }
+
+        .input-dark {
+            background-color: rgba(0, 0, 0, 1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .input-dark:focus {
+            outline: none;
+            border-color: #4cd7f6;
+            box-shadow: 0 0 0 2px rgba(76, 215, 246, 0.2);
+        }
+        
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #101415; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #323537; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4c4546; 
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen flex flex-col antialiased selection:bg-tertiary/30 selection:text-tertiary">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 border-b border-white/10 bg-surface/30 dark:bg-surface/30 backdrop-blur-xl">
+<div class="flex justify-between items-center px-margin-mobile md:px-margin-desktop py-4 max-w-max-width mx-auto">
+<div class="flex items-center gap-6">
+<a class="font-display-lg text-display-lg-mobile md:text-display-lg tracking-tighter text-on-surface" href="#">
+                    TechVerse
+                </a>
+<div class="hidden md:flex gap-6 items-center">
+<a class="text-on-surface-variant font-medium hover:text-on-surface transition-colors duration-300 font-body-md text-body-md active:scale-95 transition-transform" href="#">Discover</a>
+<a class="text-on-surface-variant font-medium hover:text-on-surface transition-colors duration-300 font-body-md text-body-md active:scale-95 transition-transform" href="#">Universe</a>
+<a class="text-on-surface font-bold border-b-2 border-primary pb-1 font-body-md text-body-md active:scale-95 transition-transform" href="#">Creators</a>
+<a class="text-on-surface-variant font-medium hover:text-on-surface transition-colors duration-300 font-body-md text-body-md active:scale-95 transition-transform" href="#">Market</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" data-icon="search">search</span>
+<input class="input-dark rounded-full py-2 pl-10 pr-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant/50 focus:ring-0 w-64" placeholder="Search universe..." type="text"/>
+</div>
+<button aria-label="notifications" class="text-on-surface hover:text-tertiary transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<img alt="User avatar" class="w-10 h-10 rounded-full object-cover border border-white/10 ml-2" data-alt="A futuristic, highly detailed cyberpunk-style avatar of a user in the TechVerse. The avatar features subtle glowing neon accents in deep space black and crisp white, embodying a quiet but powerful digital presence against a dark, minimalist background. The lighting is moody and cinematic, highlighting sophisticated glassmorphism elements." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAwnNaTa8MO7yHBVbmsFNneF68NzqJAFgczi02qhralkA3JtInNSAvcpRarp_l1dV2484R1edJlxMvRCEkxQokXqzSqIy1aw6ym-siuuzeST8cBeL-ZhyrSuK8bJzCCkwqZS2LJw-f9dFDY6TizWTCfVsz9ObglzpON_4NycK8FobazrFzG787UCJsNiBkkif1_fzHAJvX9eObG0iRcRge7ydOhsFJUtZNGBzS-lE2NPHt35mSaYmXdeBWelyxpErXpomm5wf5FUgl-"/>
+<button class="hidden md:block btn-primary px-6 py-2 rounded-full font-label-sm text-label-sm uppercase tracking-wider ml-4">
+                    Get Started
+                </button>
+</div>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="flex-grow pt-32 pb-24 px-margin-mobile md:px-margin-desktop max-w-max-width mx-auto w-full">
+<!-- Header Section -->
+<header class="mb-16 flex flex-col md:flex-row justify-between items-end gap-6">
+<div>
+<h1 class="font-display-xl text-display-mobile md:text-display-xl text-on-surface mb-4">
+                    ✨ Community Picks
+                </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
+                    Discover the latest user-submitted tools, open-source projects, and digital artifacts shaping the next generation of the web. Curated by creators, for creators.
+                </p>
+</div>
+<button class="btn-primary px-6 py-3 rounded-full font-label-sm text-label-sm uppercase tracking-wider flex items-center gap-2 whitespace-nowrap">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+                Submit Artifact
+            </button>
+</header>
+<!-- Feed Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter-md mb-24">
+<!-- Card 1 -->
+<article class="glass-panel rounded-xl overflow-hidden flex flex-col group cursor-pointer transition-transform duration-500 hover:-translate-y-2">
+<div class="h-48 w-full relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest to-transparent z-10"></div>
+<img class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700" data-alt="A highly abstract, futuristic 3D render of a sophisticated user interface dashboard floating in dark space. The interface elements use subtle glassmorphism, glowing with muted cyan and purple highlights against deep black. The composition is asymmetrical, suggesting advanced data visualization and premium SaaS tool design." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDidwK97M09Drlk5SiS86GwpSlwpbNBtYECkqFQFDVbBRiEhYFhvvV-MiBA-KPYy8WMCmsKJekIVyngRsR1vF8v5Zf4Z5DmkDrgSbsutQZAUdpED1oZO_O77M0ArIFjgHaMFrGE9qP_iAR4qeE934btSqq9wfxytUg7wWB8HwroGWmp6O0DT_wcxY7d6UG6WOxK0UWr6id7Teaf-GPg6iIZ52UGbXE0QKFmHekwUehYEg05sPFSJ3gH8-OXXkl2hOKMdtS0azm40TTk"/>
+<div class="absolute top-4 right-4 z-20 flex gap-2">
+<span class="chip-tech px-3 py-1 rounded-full font-mono-code text-[12px] uppercase tracking-wider">UI/UX</span>
+</div>
+</div>
+<div class="p-6 flex-grow flex flex-col">
+<div class="flex items-center gap-3 mb-4">
+<img class="w-8 h-8 rounded-full border border-white/10" data-alt="A minimalist, high-contrast portrait of a digital creator. They are wearing subtle futuristic eyewear that catches a glint of soft white light. The background is a stark, deep shadow, emphasizing a premium, quietly powerful aesthetic suitable for a modern tech platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuClYhJZr9oAo2EpTfHdh5HkXmJh75qOPJb9CilLuN_DKkiRMmqo3DP47ECs93PFvRjnNN11LdEyjJVIe-dXGt3iF6Ix8vsbiAlNM5CAp4sYMEYdZ_mDnTSi3hloDPB2oBvCRN4b_hsaTHhkiMxe0tIjjotsYaPvOj-70dsFxL70bUSIeEF3QbVGxyVjheP8c5gEZFsC6Sby0D4zP2qh1Tyaodh4AeoJtVDJqWoZQz3E642ERdmbtz8URY6uZFetxpotRBXu82C6wFTB"/>
+<span class="font-label-sm text-label-sm text-on-surface-variant">@neodesign</span>
+<span class="text-outline-variant text-sm ml-auto">2h ago</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-2 group-hover:text-tertiary transition-colors">Quantum UI Kit</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6 line-clamp-2 flex-grow">
+                        A comprehensive glassmorphism component library for React. Built with zero-runtime CSS-in-JS and fluid animations out of the box.
+                    </p>
+<div class="flex items-center justify-between border-t border-white/5 pt-4 mt-auto">
+<div class="flex gap-4">
+<button aria-label="Like" class="btn-ghost flex items-center gap-1.5 font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="favorite">favorite</span>
+                                2.4k
+                            </button>
+<button aria-label="Comment" class="btn-ghost flex items-center gap-1.5 font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="chat_bubble">chat_bubble</span>
+                                142
+                            </button>
+</div>
+<div class="flex gap-2">
+<button aria-label="Save" class="btn-ghost p-1 rounded-full">
+<span class="material-symbols-outlined" data-icon="bookmark">bookmark</span>
+</button>
+<button aria-label="Share" class="btn-ghost p-1 rounded-full">
+<span class="material-symbols-outlined" data-icon="share">share</span>
+</button>
+</div>
+</div>
+</div>
+</article>
+<!-- Card 2 -->
+<article class="glass-panel rounded-xl overflow-hidden flex flex-col group cursor-pointer transition-transform duration-500 hover:-translate-y-2">
+<div class="h-48 w-full relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest to-transparent z-10"></div>
+<div class="bg-cover bg-center w-full h-full transform group-hover:scale-105 transition-transform duration-700" data-alt="A mesmerizing generative art pattern composed of intricate web-like structures and glowing nodes. The color palette relies on deep deep blacks and pristine whites with occasional intense pulses of vibrant cyan. The overall mood is serene, highly technical, and futuristic, perfectly aligned with modern glassmorphism." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCpNTu2qEVpGg5Ll8AJv2aVDviM6t7NSzx1MTPyQIfjZ9VYw8QYcG1cM9H2NjQ3dBwRLr8_1tYepYpXbSRIBKDEmbBTQhuosClG3ShEF9TqD-25WL-RKKYipToMF7lvVndJ9kIuAOODX7FXVyNunFlJ38nkqC44K8M4gqphiCq-_J2AbsUoX7ThUdJ9ZbYd7Ci0YQX6CQ09KquGLuWIaVqZafESf4mfaJ8St8hTe8t5gX7sljT6lFgEp0sHT4VzXmfEUic6xiamqWJt')"></div>
+<div class="absolute top-4 right-4 z-20 flex gap-2">
+<span class="bg-secondary/10 text-secondary px-3 py-1 rounded-full font-mono-code text-[12px] uppercase tracking-wider">Web3</span>
+</div>
+</div>
+<div class="p-6 flex-grow flex flex-col">
+<div class="flex items-center gap-3 mb-4">
+<img class="w-8 h-8 rounded-full border border-white/10" data-alt="A stylized digital avatar of a female developer, illuminated by soft, high-key white lighting. She is looking intently forward. The aesthetic is clean, minimalist, and utilizes a sophisticated palette of deep blacks and subtle purples, reflecting a quiet power and expertise." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBkaimTfGNIax2Mv8HWHn2deyEo7aFSfxsRZlopxB-E2tF5tc_7xOtZDjHInP9kDtWHDbqisJz2v7mNk56YuCuRUCv6lQqBeEGzqsY2uwzZf4Jcm6-pcU7C-Fk2WCUOhiiZln0SgNoDUIe3-Db8eBVCPlFoYimQ8KfUYig3Iu3whPh6yetwUQdJQM55hUu_XpO4mWWcORa-akidvoyWr9Wm3ZutLqS5iepJ_wwdgFKf_3R-lti3vrTfi4EcPTBgL8TdBM09dLYX07uD"/>
+<span class="font-label-sm text-label-sm text-on-surface-variant">@sarah_codes</span>
+<span class="text-outline-variant text-sm ml-auto">5h ago</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-2 group-hover:text-tertiary transition-colors">Nexus Protocol Explorer</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6 line-clamp-2 flex-grow">
+                        Visualize smart contract interactions in real-time with this stunning WebGL powered dashboard. Monitor the pulse of the decentralized web.
+                    </p>
+<div class="flex items-center justify-between border-t border-white/5 pt-4 mt-auto">
+<div class="flex gap-4">
+<button aria-label="Like" class="btn-ghost flex items-center gap-1.5 font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="favorite">favorite</span>
+                                1.8k
+                            </button>
+<button aria-label="Comment" class="btn-ghost flex items-center gap-1.5 font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="chat_bubble">chat_bubble</span>
+                                89
+                            </button>
+</div>
+<div class="flex gap-2">
+<button aria-label="Save" class="btn-ghost p-1 rounded-full">
+<span class="material-symbols-outlined" data-icon="bookmark">bookmark</span>
+</button>
+<button aria-label="Share" class="btn-ghost p-1 rounded-full">
+<span class="material-symbols-outlined" data-icon="share">share</span>
+</button>
+</div>
+</div>
+</div>
+</article>
+<!-- Card 3 -->
+<article class="glass-panel rounded-xl overflow-hidden flex flex-col group cursor-pointer transition-transform duration-500 hover:-translate-y-2">
+<div class="h-48 w-full relative overflow-hidden bg-surface-container-low flex items-center justify-center">
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest to-transparent z-10"></div>
+<img class="w-full h-full object-cover opacity-60 transform group-hover:scale-105 transition-transform duration-700" data-alt="A sleek, dark-mode terminal interface showing lines of green and white code fading into a deep black abyss. The typography is crisp and monospace. Subtle glowing effects highlight key functions, creating an immersive, exclusive atmosphere typical of high-end developer tools." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5myP9QFserPDHZiDQvNlXv_aqYRY_luWW8wpTFawsbK34JGxv23mWLGTv004RiaWI3wkHgkFs8URdMObZw50kragXAiuMbhWWjB6ccg7M4Y-5HoFYN5ukf73CdMX010vfofB9-CBN7pg-7NzY_md1QZ71rZhAbYk3iobJjQYAQ_5IZLtMF9Xz_FxRtdmWVz0Lpunut_CN_tvMsuXm-fYiFnkgHYnhPtNn4O1GqmS157QZBfDrQ2F0dEtqBefpfs8miuw0NzhnKbIF"/>
+<div class="absolute top-4 right-4 z-20 flex gap-2">
+<span class="bg-primary/10 text-primary px-3 py-1 rounded-full font-mono-code text-[12px] uppercase tracking-wider">DevTools</span>
+</div>
+</div>
+<div class="p-6 flex-grow flex flex-col">
+<div class="flex items-center gap-3 mb-4">
+<img class="w-8 h-8 rounded-full border border-white/10" data-alt="An abstract, geometric profile icon featuring sharp angles and a blend of deep space black with crisp white edges. It conveys a sense of precision and advanced technology, avoiding clichéd neon tropes in favor of a refined, minimalist aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-TtqI4HPvronMJq-gNwTSMHopYrG41XxTJ2jEPVAWaQ5wuCRlkIDZRKqcKTPye0lF8VAbGzAyWkaXqlqd83ZHgGFohufnK32vjztT-IzmNjFKlJDNBEZqmQKomWGzFo8E_qmeUTuhiqckX1RPOSYEVBDRDHsA8pySmuJ61O6rqLT-ZQNlytBq8BIgC0Bz7U59DLOfjjiUo2bi3TyV9JCyIPKBvSJV2wjECW64gWkPM40Xwx5ACAQwejkobLGirrmPfyVhakNcn7og"/>
+<span class="font-label-sm text-label-sm text-on-surface-variant">@system_01</span>
+<span class="text-outline-variant text-sm ml-auto">1d ago</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-2 group-hover:text-tertiary transition-colors">Aero CLI</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6 line-clamp-2 flex-grow">
+                        A blazing fast, rust-based command line interface for managing cloud deployments. Say goodbye to sluggish terminals and welcome instant feedback.
+                    </p>
+<div class="flex items-center justify-between border-t border-white/5 pt-4 mt-auto">
+<div class="flex gap-4">
+<button aria-label="Like" class="btn-ghost flex items-center gap-1.5 font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="favorite">favorite</span>
+                                3.1k
+                            </button>
+<button aria-label="Comment" class="btn-ghost flex items-center gap-1.5 font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="chat_bubble">chat_bubble</span>
+                                256
+                            </button>
+</div>
+<div class="flex gap-2">
+<button aria-label="Save" class="btn-ghost p-1 rounded-full text-tertiary">
+<span class="material-symbols-outlined" data-icon="bookmark" data-weight="fill">bookmark</span>
+</button>
+<button aria-label="Share" class="btn-ghost p-1 rounded-full">
+<span class="material-symbols-outlined" data-icon="share">share</span>
+</button>
+</div>
+</div>
+</div>
+</article>
+</div>
+<div class="flex justify-center mt-12">
+<button class="btn-ghost border border-white/10 px-8 py-3 rounded-full font-label-sm text-label-sm uppercase tracking-wider flex items-center gap-2 hover:border-white/30">
+                Load More Discoveries
+                <span class="material-symbols-outlined text-[18px]" data-icon="arrow_downward">arrow_downward</span>
+</button>
+</div>
+</main>
+<!-- Footer -->
+<footer class="w-full py-12 border-t border-white/5 bg-surface dark:bg-surface">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin-mobile md:px-margin-desktop max-w-max-width mx-auto gap-gutter-sm">
+<div class="font-display-mobile text-display-mobile text-on-surface">
+                TechVerse
+            </div>
+<div class="flex gap-6">
+<a class="text-on-surface underline font-mono-code text-mono-code hover:text-primary transition-colors duration-200 opacity-80 hover:opacity-100 transition-opacity" href="#">Github</a>
+<a class="text-on-surface-variant font-mono-code text-mono-code hover:text-primary transition-colors duration-200 opacity-80 hover:opacity-100 transition-opacity" href="#">Discord</a>
+<a class="text-on-surface-variant font-mono-code text-mono-code hover:text-primary transition-colors duration-200 opacity-80 hover:opacity-100 transition-opacity" href="#">X</a>
+<a class="text-on-surface-variant font-mono-code text-mono-code hover:text-primary transition-colors duration-200 opacity-80 hover:opacity-100 transition-opacity" href="#">Bilibili</a>
+</div>
+<div class="font-mono-code text-mono-code text-on-surface-variant">
+                © 2024 TechVerse Inc. Built for the next generation.
+            </div>
+</div>
+</footer>
+</body></html>
+
+<!-- TechVerse Community Discovery -->
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TechVerse Learning Hub - Your Tech Odyssey</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        /* Basic Glassmorphism & Animations */
+        .glass-panel {
+            background: rgba(25, 28, 30, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .glass-panel:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .roadmap-line {
+            position: absolute;
+            background: linear-gradient(180deg, rgba(76, 215, 246, 0.1) 0%, rgba(214, 169, 255, 0.1) 100%);
+            width: 2px;
+            z-index: 0;
+        }
+
+        .node-glow {
+            transition: all 0.3s ease;
+        }
+        .node-glow:hover {
+            box-shadow: 0 0 20px rgba(76, 215, 246, 0.2);
+            border-color: rgba(76, 215, 246, 0.5);
+        }
+
+        .aurora-btn {
+            position: relative;
+            overflow: hidden;
+        }
+        .aurora-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(45deg, rgba(76,215,246,0.1), rgba(214,169,255,0.1));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+        .aurora-btn:hover::before {
+            opacity: 1;
+        }
+
+        /* Fluid Typography scaling for hero */
+        .hero-text-glow {
+            text-shadow: 0 0 40px rgba(255,255,255,0.1);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-lowest": "#0b0f10",
+                      "on-secondary-fixed-variant": "#6900b3",
+                      "surface-container-low": "#191c1e",
+                      "surface-bright": "#363a3b",
+                      "on-error-container": "#ffdad6",
+                      "tertiary-container": "#000000",
+                      "surface": "#101415",
+                      "on-tertiary-container": "#008197",
+                      "on-surface-variant": "#cfc4c5",
+                      "primary-fixed-dim": "#c6c6c6",
+                      "on-surface": "#e0e3e5",
+                      "surface-variant": "#323537",
+                      "outline-variant": "#4c4546",
+                      "on-secondary-container": "#d6a9ff",
+                      "surface-dim": "#101415",
+                      "tertiary-fixed-dim": "#4cd7f6",
+                      "primary-fixed": "#e2e2e2",
+                      "on-primary-container": "#757575",
+                      "secondary-container": "#6f00be",
+                      "surface-container": "#1d2022",
+                      "secondary": "#ddb7ff",
+                      "on-primary-fixed-variant": "#474747",
+                      "tertiary": "#4cd7f6",
+                      "surface-container-highest": "#323537",
+                      "inverse-on-surface": "#2d3133",
+                      "on-tertiary-fixed": "#001f26",
+                      "background": "#101415",
+                      "on-error": "#690005",
+                      "on-secondary-fixed": "#2c0051",
+                      "on-tertiary-fixed-variant": "#004e5c",
+                      "on-primary": "#303030",
+                      "surface-tint": "#c6c6c6",
+                      "outline": "#988e90",
+                      "inverse-primary": "#5e5e5e",
+                      "on-tertiary": "#003640",
+                      "secondary-fixed": "#f0dbff",
+                      "primary": "#c6c6c6",
+                      "secondary-fixed-dim": "#ddb7ff",
+                      "on-secondary": "#490080",
+                      "primary-container": "#000000",
+                      "inverse-surface": "#e0e3e5",
+                      "on-primary-fixed": "#1b1b1b",
+                      "on-background": "#e0e3e5",
+                      "error": "#ffb4ab",
+                      "tertiary-fixed": "#acedff",
+                      "surface-container-high": "#272a2c",
+                      "error-container": "#93000a"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "margin-mobile": "20px",
+                      "gutter-md": "24px",
+                      "margin-desktop": "64px",
+                      "unit": "4px",
+                      "max-width": "1440px",
+                      "gutter-sm": "16px"
+              },
+              "fontFamily": {
+                      "display-lg": ["Inter", "sans-serif"],
+                      "mono-code": ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", "monospace"],
+                      "display-mobile": ["Inter", "sans-serif"],
+                      "display-xl": ["Inter", "sans-serif"],
+                      "body-md": ["Inter", "sans-serif"],
+                      "label-sm": ["Inter", "sans-serif"],
+                      "headline-md": ["Inter", "sans-serif"],
+                      "body-lg": ["Inter", "sans-serif"]
+              },
+              "fontSize": {
+                      "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.03em", "fontWeight": "700" }],
+                      "mono-code": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                      "display-mobile": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                      "display-xl": ["72px", { "lineHeight": "80px", "letterSpacing": "-0.04em", "fontWeight": "800" }],
+                      "body-md": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" }],
+                      "label-sm": ["13px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                      "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                      "body-lg": ["18px", { "lineHeight": "28px", "letterSpacing": "0em", "fontWeight": "400" }]
+              }
+            }
+          }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background min-h-screen font-body-md antialiased overflow-x-hidden selection:bg-tertiary-fixed-dim/30 selection:text-tertiary">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-surface/30 dark:bg-surface/30 backdrop-blur-xl border-b border-white/10 flat no shadows">
+<div class="flex justify-between items-center px-margin-mobile md:px-margin-desktop py-4 max-w-max-width mx-auto">
+<!-- Brand -->
+<a class="font-display-lg text-display-lg-mobile md:text-display-lg tracking-tighter text-on-surface" href="#">TechVerse</a>
+<!-- Navigation Links -->
+<div class="hidden md:flex items-center gap-8">
+<a class="text-on-surface font-bold border-b-2 border-primary pb-1 hover:text-on-surface transition-colors duration-300 active:scale-95 transition-transform font-body-md text-body-md" href="#">Discover</a>
+<a class="text-on-surface-variant font-medium hover:text-on-surface transition-colors duration-300 active:scale-95 transition-transform font-body-md text-body-md" href="#">Universe</a>
+<a class="text-on-surface-variant font-medium hover:text-on-surface transition-colors duration-300 active:scale-95 transition-transform font-body-md text-body-md" href="#">Creators</a>
+<a class="text-on-surface-variant font-medium hover:text-on-surface transition-colors duration-300 active:scale-95 transition-transform font-body-md text-body-md" href="#">Market</a>
+</div>
+<!-- Actions -->
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-on-surface transition-colors" data-icon="notifications">notifications</button>
+<button class="hidden md:flex px-6 py-2 border border-white/20 rounded-full text-on-surface hover:bg-white/5 transition-all aurora-btn font-label-sm text-label-sm">Get Started</button>
+<!-- Mobile Menu Toggle -->
+<button class="md:hidden material-symbols-outlined text-on-surface">menu</button>
+</div>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="pt-32 pb-24">
+<!-- Hero Section -->
+<section class="max-w-max-width mx-auto px-margin-mobile md:px-margin-desktop mb-32 relative">
+<div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-tertiary-fixed-dim/10 via-background to-background -z-10 pointer-events-none blur-3xl"></div>
+<div class="flex flex-col items-center text-center max-w-4xl mx-auto space-y-8">
+<div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-tertiary-fixed-dim/20 bg-tertiary-fixed-dim/5 text-tertiary font-label-sm text-label-sm uppercase tracking-widest backdrop-blur-md">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+                    Interactive Roadmap
+                </div>
+<h1 class="font-display-xl text-display-mobile md:text-display-xl text-on-surface tracking-tighter leading-tight hero-text-glow">
+                    Start Your Tech <br/>
+<span class="text-transparent bg-clip-text bg-gradient-to-r from-tertiary to-secondary">Odyssey</span>
+</h1>
+<p class="font-body-lg text-body-md md:text-body-lg text-on-surface-variant max-w-2xl mx-auto">
+                    Navigate the complexities of modern development. Master AI, build resilient systems, and automate your workflow through a connected, interactive curriculum.
+                </p>
+<div class="flex flex-col sm:flex-row items-center gap-4 pt-4">
+<button class="px-8 py-4 rounded-full bg-on-surface text-surface font-label-sm text-label-sm uppercase tracking-wide hover:bg-surface-tint transition-all flex items-center gap-2 aurora-btn shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+                        Begin Journey
+                        <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+<button class="px-8 py-4 rounded-full border border-white/10 text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-all font-label-sm text-label-sm uppercase tracking-wide">
+                        Explore Curriculum
+                    </button>
+</div>
+</div>
+</section>
+<!-- Roadmap Interactive Section -->
+<section class="max-w-max-width mx-auto px-margin-mobile md:px-margin-desktop relative">
+<!-- Structural Line -->
+<div class="hidden lg:block absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent -z-10"></div>
+<div class="flex flex-col gap-32">
+<!-- Category 1: AI Learning -->
+<div class="relative flex flex-col lg:flex-row items-center gap-12 lg:gap-24 group">
+<!-- Path connecting to center -->
+<div class="hidden lg:block absolute top-1/2 left-1/2 w-1/4 h-px bg-gradient-to-r from-tertiary-fixed-dim/20 to-transparent -z-10 -translate-y-1/2"></div>
+<div class="lg:w-1/2 flex justify-end w-full">
+<div class="text-right space-y-4 max-w-md">
+<h2 class="font-headline-md text-headline-md text-on-surface">AI Collaboration</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Master the art of prompting. Leverage LLMs to accelerate learning and problem-solving.</p>
+</div>
+</div>
+<!-- Center Node -->
+<div class="w-16 h-16 rounded-full bg-surface-container border border-white/10 flex items-center justify-center z-10 glass-panel node-glow shadow-[0_0_30px_rgba(76,215,246,0.1)]">
+<span class="material-symbols-outlined text-tertiary">psychology</span>
+</div>
+<!-- Modules Bento -->
+<div class="lg:w-1/2 w-full">
+<div class="grid grid-cols-2 gap-4 max-w-md">
+<div class="glass-panel p-6 rounded-xl flex flex-col gap-4 hover:bg-white/[0.02] transition-colors cursor-pointer group/card border-l-2 border-l-transparent hover:border-l-tertiary">
+<span class="text-on-surface font-body-md text-body-md font-semibold">ChatGPT</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">Prompt Engineering</span>
+</div>
+<div class="glass-panel p-6 rounded-xl flex flex-col gap-4 hover:bg-white/[0.02] transition-colors cursor-pointer group/card border-l-2 border-l-transparent hover:border-l-tertiary">
+<span class="text-on-surface font-body-md text-body-md font-semibold">Claude</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">Context Management</span>
+</div>
+<div class="glass-panel p-6 rounded-xl flex flex-col gap-4 hover:bg-white/[0.02] transition-colors cursor-pointer group/card border-l-2 border-l-transparent hover:border-l-tertiary">
+<span class="text-on-surface font-body-md text-body-md font-semibold">Gemini</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">Multimodal Workflows</span>
+</div>
+<div class="glass-panel p-6 rounded-xl flex flex-col gap-4 hover:bg-white/[0.02] transition-colors cursor-pointer group/card border-l-2 border-l-transparent hover:border-l-tertiary bg-white/[0.01]">
+<span class="text-on-surface font-body-md text-body-md font-semibold text-tertiary flex items-center gap-2">Cursor <span class="material-symbols-outlined text-[16px]">code</span></span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">AI IDE Integration</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Category 2: Development -->
+<div class="relative flex flex-col lg:flex-row-reverse items-center gap-12 lg:gap-24 group">
+<div class="hidden lg:block absolute top-1/2 right-1/2 w-1/4 h-px bg-gradient-to-l from-secondary/20 to-transparent -z-10 -translate-y-1/2"></div>
+<div class="lg:w-1/2 flex justify-start w-full">
+<div class="text-left space-y-4 max-w-md">
+<h2 class="font-headline-md text-headline-md text-on-surface">Core Development</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Build robust applications. From fluid user interfaces to scalable backend architectures.</p>
+</div>
+</div>
+<div class="w-16 h-16 rounded-full bg-surface-container border border-white/10 flex items-center justify-center z-10 glass-panel node-glow shadow-[0_0_30px_rgba(214,169,255,0.1)]">
+<span class="material-symbols-outlined text-secondary">terminal</span>
+</div>
+<div class="lg:w-1/2 w-full flex justify-end">
+<div class="grid grid-cols-2 gap-4 max-w-md w-full">
+<div class="glass-panel p-6 rounded-xl flex flex-col gap-4 hover:bg-white/[0.02] transition-colors cursor-pointer border-r-2 border-r-transparent hover:border-r-secondary">
+<span class="text-on-surface font-body-md text-body-md font-semibold">Frontend</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">React, UI/UX, State</span>
+</div>
+<div class="glass-panel p-6 rounded-xl flex flex-col gap-4 hover:bg-white/[0.02] transition-colors cursor-pointer border-r-2 border-r-transparent hover:border-r-secondary">
+<span class="text-on-surface font-body-md text-body-md font-semibold">Backend</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">APIs, Databases, Auth</span>
+</div>
+<div class="glass-panel p-6 rounded-xl flex flex-col gap-4 hover:bg-white/[0.02] transition-colors cursor-pointer border-r-2 border-r-transparent hover:border-r-secondary">
+<span class="text-on-surface font-body-md text-body-md font-semibold">Python</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">Data &amp; Scripts</span>
+</div>
+<div class="glass-panel p-6 rounded-xl flex flex-col gap-4 hover:bg-white/[0.02] transition-colors cursor-pointer border-r-2 border-r-transparent hover:border-r-secondary">
+<span class="text-on-surface font-body-md text-body-md font-semibold text-secondary">AI Dev</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">RAG, Fine-tuning</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Category 3: Productivity -->
+<div class="relative flex flex-col lg:flex-row items-center gap-12 lg:gap-24 group">
+<div class="hidden lg:block absolute top-1/2 left-1/2 w-1/4 h-px bg-gradient-to-r from-on-tertiary-container/20 to-transparent -z-10 -translate-y-1/2"></div>
+<div class="lg:w-1/2 flex justify-end w-full">
+<div class="text-right space-y-4 max-w-md">
+<h2 class="font-headline-md text-headline-md text-on-surface">Systems &amp; Productivity</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Optimize your output. Build second brains and automate repetitive tasks.</p>
+</div>
+</div>
+<div class="w-16 h-16 rounded-full bg-surface-container border border-white/10 flex items-center justify-center z-10 glass-panel node-glow shadow-[0_0_30px_rgba(0,129,151,0.1)]">
+<span class="material-symbols-outlined text-on-tertiary-container">workflow</span>
+</div>
+<div class="lg:w-1/2 w-full">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
+<div class="glass-panel p-6 rounded-xl flex flex-col gap-4 hover:bg-white/[0.02] transition-colors cursor-pointer border-l-2 border-l-transparent hover:border-l-on-tertiary-container col-span-1 sm:col-span-2">
+<span class="text-on-surface font-body-md text-body-md font-semibold">Notion &amp; Obsidian</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">Knowledge Management, PKM Systems</span>
+</div>
+<div class="glass-panel p-6 rounded-xl flex flex-col gap-4 hover:bg-white/[0.02] transition-colors cursor-pointer border-l-2 border-l-transparent hover:border-l-on-tertiary-container col-span-1 sm:col-span-2">
+<span class="text-on-surface font-body-md text-body-md font-semibold">Workflow Automation</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">Zapier, Make, Custom Scripts</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-surface dark:bg-surface w-full py-12 border-t border-white/5 flat no shadows">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin-mobile md:px-margin-desktop max-w-max-width mx-auto gap-gutter-sm">
+<span class="font-mono-code text-mono-code text-on-surface-variant opacity-80">© 2024 TechVerse Inc. Built for the next generation.</span>
+<div class="flex items-center gap-6">
+<a class="font-mono-code text-mono-code text-on-surface-variant hover:text-primary transition-colors duration-200 opacity-80 hover:opacity-100 transition-opacity" href="#">Github</a>
+<a class="font-mono-code text-mono-code text-on-surface-variant hover:text-primary transition-colors duration-200 opacity-80 hover:opacity-100 transition-opacity" href="#">Discord</a>
+<a class="font-mono-code text-mono-code text-on-surface-variant hover:text-primary transition-colors duration-200 opacity-80 hover:opacity-100 transition-opacity" href="#">X</a>
+<a class="font-mono-code text-mono-code text-on-surface-variant hover:text-primary transition-colors duration-200 opacity-80 hover:opacity-100 transition-opacity" href="#">Bilibili</a>
+</div>
+<span class="font-display-mobile text-display-mobile text-on-surface tracking-tighter">TechVerse</span>
+</div>
+</footer>
+</body></html>
